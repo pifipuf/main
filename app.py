@@ -1,8 +1,9 @@
 import logging
 from flask import Flask
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
+from telegram.ext import Application, CommandHandler, CallbackContext
 import requests
+import threading
 import os
 
 app = Flask(__name__)
@@ -73,6 +74,13 @@ async def run_bot():
     # Обработчики сообщений
     application.run_polling()
 
+# Запуск бота в отдельном потоке
+def start_telegram_bot():
+    import asyncio
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(run_bot())
+
 # Роут для корневого URL
 @app.route('/')
 def index():
@@ -81,7 +89,9 @@ def index():
 # Роут для запуска бота
 @app.route('/start_bot', methods=["GET", "POST"])
 def start_bot():
-    run_bot()
+    # Запускаем Telegram-бота в отдельном потоке
+    bot_thread = threading.Thread(target=start_telegram_bot)
+    bot_thread.start()
     return "Bot started!"
 
 # Стартовый командный скрипт для запуска Flask-сервера и бота
